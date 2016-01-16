@@ -1,19 +1,24 @@
 # ask for two numbers, then ask for an operation (add, subtract, multiply, divide)
 # then prints the result to the screen
 
-def to_i_or_f(num_str)
-  if num_str.to_f == num_str.to_i 
-    num_str.to_i 
+def prompt(message)
+  Kernel.puts("=> #{message}")
+end
+
+
+def to_i_or_f(num)
+  if num == num.to_i 
+    num.to_i 
   else
-    num_str.to_f 
+    num
   end
 end
 
 def whitelist_array(message,arr)
-  Kernel.puts(message)
+  prompt(message)
   input = Kernel.gets().chomp()
   unless arr.include?(input)
-    Kernel.puts("=> Invalid entry. Please try again.")
+    prompt("Invalid entry. Please try again.")
     input_whitelist(message,arr)
   end
   input
@@ -29,35 +34,79 @@ def whitelist_realnum(message)
   input 
 end
 
+def operation_to_message(op)
+  case op
+  when 'a'
+    'Adding'
+  when 's'
+    'Subtracting'
+  when 'm'
+    'Multiplying'
+  when 'd'
+    'Dividing'
+  end
+end
+
 
 Kernel.puts("Welcome to Calculator!")
-
-num1 = whitelist_realnum("What's the first number?")
-num2 = whitelist_realnum("What's the second number?")
-
-Kernel.puts("The first number is #{num1}")
-Kernel.puts("The second number is #{num2}")
-
-if to_i_or_f(num2) != 0
-  operation = whitelist_array("What operation would you like to perform? 
-    a) add  s) subtract  m) multiply  d) divide", ['a','s','m','d'])
-else
-  operation = whitelist_array("What operation would you like to perform? 
-    a) add  s) subtract  m) multiply", ['a','s','m'])
+loop do 
+  prompt("Enter your name:")
+  name = Kernel.gets().chomp()
+  unless name.empty?
+    prompt("Hi #{name}!")
+    break
+  end
+  prompt("must enter a valid name")
 end
 
-def answer(result)
-  Kernel.puts("The answer is #{result.to_s}")
-end
+loop do # main loop
 
-case operation
-when 'a'
-  answer(to_i_or_f(num1.to_f + num2.to_f))
-when 's'
-  answer(to_i_or_f(num1.to_f - num2.to_f))
-when 'm'
-  answer(to_i_or_f(num1.to_f * num2.to_f))
-else # 'd' <-- must be due to whitelist_array
-  answer(to_i_or_f(num1.to_f / num2.to_f))
+  num1 = whitelist_realnum("What's the first number?")
+  num2 = whitelist_realnum("What's the second number?")
+
+  Kernel.puts("The first number is #{num1}")
+  Kernel.puts("The second number is #{num2}")
+
+  operator_prompt = <<-MSG
+    What operation would you like to perform?
+    a) add
+    s) subtract
+    m) multiply
+    d) divide
+  MSG
+
+  divide_by_zero_prompt = <<-MSG
+    What operation would you like to perform?
+    a) add
+    s) subtract
+    m) multiply
+  MSG
+
+  if to_i_or_f(num2) != 0
+    operation = whitelist_array(operator_prompt, ['a','s','m','d'])
+  else
+    operation = whitelist_array(divide_by_zero_prompt, ['a','s','m'])
+  end
+
+  prompt("#{operation_to_message(operation)} the two numbers...")
+
+  result = case operation
+           when 'a'
+            to_i_or_f(num1.to_f + num2.to_f)
+           when 's'
+            to_i_or_f(num1.to_f - num2.to_f)
+           when 'm'
+            to_i_or_f(num1.to_f * num2.to_f)
+           when 'd'
+            to_i_or_f(num1.to_f / num2.to_f)
+  end
+
+  prompt("The answer is #{result.to_s}")
+
+  prompt("Do you wish to perform another calculation? (press y to calculate again)")
+  answer = Kernel.gets().chomp
+  break unless answer.downcase == 'y'
+
 end
+  prompt("Thank you for using Calculator!")
 
