@@ -1,5 +1,6 @@
 # ask for two numbers, then ask for an operation (add, subtract, multiply, divide)
 # then prints the result to the screen
+require_relative 'number_validation'
 
 def prompt(message)
   Kernel.puts("=> #{message}")
@@ -31,9 +32,9 @@ def whitelist_realnum(message)
   loop do
     prompt(message)
     input = Kernel.gets().chomp
-    if (input != input.to_f.to_s) && (input != input.to_i.to_s) # string must be "#{integer or float}"
+    if number?(input) then break # See number_validation.rb
+    else
       prompt("Not a real number. Please try again.")
-    else break
     end
   end
   input
@@ -67,8 +68,8 @@ loop do # main loop
   num1 = whitelist_realnum("What's the first number?")
   num2 = whitelist_realnum("What's the second number?")
 
-  Kernel.puts("The first number is #{num1}")
-  Kernel.puts("The second number is #{num2}")
+  Kernel.puts("The first number is #{num1.to_f}")
+  Kernel.puts("The second number is #{num2.to_f}")
 
   operator_prompt = <<-MSG
     What operation would you like to perform?
