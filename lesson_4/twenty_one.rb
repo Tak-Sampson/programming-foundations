@@ -112,12 +112,12 @@ def display_end_state(player_hands, dealer_hand)
     else
       outcome = '   win!'
     end
-  elsif player_hands == player_hands.select { |hand| hand['status'] == '   tie' }
+  elsif player_hands == player_hands.select { |hand| hand['status'] == '   tie ' }
     outcome = '   tie '
   elsif player_hands == player_hands.select { |hand| hand['status'] == '   win!' }
     outcome = '   loss'
   else
-    oucome = '   -   '
+    outcome = '   -   '
   end
 
   puts '____________________________________________________________________'
@@ -205,96 +205,99 @@ loop do
     puts 'Dealer got 21. Better luck next time!'
     puts ''
     display_end_state(player_hands, dealer_hand)
-    break
-  end
 
-  # display gamestate
-  # (for each player)
-  # for each hand
-  #   display
-  #   give valid options until hand not live
-  # do until no live hands
-  player_hands.each_with_index do |hand, i|
-    if value(hand) == 21
-      update_status(hand, '21')
-    elsif value(hand) > 21
-      update_status(hand, 'bust')
-    end
-
-    until hand['status'] != 'live'
-      
-      system "clear"
-      puts 'Your turn'
-      puts ''
-      display_game_state(dealer_hand, player_hands, i, 'player')
-      
-      player_choice = valid_choice(hand, player_hands)
-
-      # hit
-      deal(hand, remaining_deck) if player_choice == '1'
-      # stay
-      update_status(hand, 'stayed') if player_choice == '2'
-      # split -  modifies object being iterated over! This is intentional **********
-      player_hands << {'cards' => [hand['cards'].pop], 'status' => 'live'} if player_choice == '3'
-
-      # check for 21 or bust and update appropriately
+  elsif value(player_hands[0]) == 21
+    puts 'You got 21! Congratulations!'
+    puts ''
+    display_end_state(player_hands, dealer_hand)
+  else
+    # display gamestate
+    # (for each player)
+    # for each hand
+    #   display
+    #   give valid options until hand not live
+    # do until no live hands
+    player_hands.each_with_index do |hand, i|
       if value(hand) == 21
         update_status(hand, '21')
       elsif value(hand) > 21
         update_status(hand, 'bust')
       end
+
+      until hand['status'] != 'live'
+        
+        system "clear"
+        puts 'Your turn'
+        puts ''
+        display_game_state(dealer_hand, player_hands, i, 'player')
+        
+        player_choice = valid_choice(hand, player_hands)
+
+        # hit
+        deal(hand, remaining_deck) if player_choice == '1'
+        # stay
+        update_status(hand, 'stayed') if player_choice == '2'
+        # split -  modifies object being iterated over! This is intentional **********
+        player_hands << {'cards' => [hand['cards'].pop], 'status' => 'live'} if player_choice == '3'
+
+        # check for 21 or bust and update appropriately
+        if value(hand) == 21
+          update_status(hand, '21')
+        elsif value(hand) > 21
+          update_status(hand, 'bust')
+        end
+      end
     end
-  end
 
-  # Dealer's turn
+    # Dealer's turn
 
-  system "clear"
-  puts 'Revealing Dealer\'s cards...'
-  puts ''
-  display_game_state(dealer_hand, player_hands, 0, 'player')
-  sleep 2.5
+    system "clear"
+    puts 'Revealing Dealer\'s cards...'
+    puts ''
+    display_game_state(dealer_hand, player_hands, 0, 'player')
+    sleep 2.5
 
-  system "clear"
-  puts 'Dealer\'s turn:'
-  puts ''
-  display_game_state(dealer_hand, player_hands, 0, 'dealer')
+    system "clear"
+    puts 'Dealer\'s turn:'
+    puts ''
+    display_game_state(dealer_hand, player_hands, 0, 'dealer')
 
-  until dealer_hand['status'] != 'live'
-    sleep 1.5
+    until dealer_hand['status'] != 'live' || player_hands == player_hands.select { |hand| hand['status'] == 'bust' }
+      sleep 1.5
+      system "clear"
+
+      case value(dealer_hand)
+      when 0..16
+        puts 'Dealer hits!'
+        puts ''
+        display_game_state(dealer_hand, player_hands, 0, 'dealer')
+        deal(dealer_hand, remaining_deck)
+      when 17..20
+        puts 'Dealer stays'
+        puts ''
+        display_game_state(dealer_hand, player_hands, 0, 'dealer')
+        update_status(dealer_hand, 'stayed')
+      when 21
+        puts 'Dealer gets 21!'
+        puts ''
+        display_game_state(dealer_hand, player_hands, 0, 'dealer')
+        update_status(dealer_hand, '21')
+      else
+        puts 'Dealer busts!'
+        puts ''
+        display_game_state(dealer_hand, player_hands, 0, 'dealer')
+        update_status(dealer_hand, 'bust')
+      end
+    end
+
+    sleep 2
     system "clear"
 
-    case value(dealer_hand)
-    when 0..16
-      puts 'Dealer hits!'
-      puts ''
-      display_game_state(dealer_hand, player_hands, 0, 'dealer')
-      deal(dealer_hand, remaining_deck)
-    when 17..20
-      puts 'Dealer stays'
-      puts ''
-      display_game_state(dealer_hand, player_hands, 0, 'dealer')
-      update_status(dealer_hand, 'stayed')
-    when 21
-      puts 'Dealer gets 21!'
-      puts ''
-      display_game_state(dealer_hand, player_hands, 0, 'dealer')
-      update_status(dealer_hand, '21')
-    else
-      puts 'Dealer busts!'
-      puts ''
-      display_game_state(dealer_hand, player_hands, 0, 'dealer')
-      update_status(dealer_hand, 'bust')
-    end
+    # Report results
+    puts 'Results of game:'
+    puts ''
+    display_end_state(player_hands, dealer_hand)
   end
-
-  sleep 2
-  system "clear"
-
-  # Report results
-  puts 'Results of game:'
-  puts ''
-  display_end_state(player_hands, dealer_hand)
-
   # Play again?
   3.times {puts ''}
   puts 'Would you like to play again?  y) yes   press any other key to exit'
