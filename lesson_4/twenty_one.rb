@@ -2,16 +2,16 @@
 require 'pry'
 # Initialize Deck
 hsh_arr = []
-full_deck = ((2..10).to_a + ['J', 'Q', 'K', 'A'] ).product(['d','c','h','s'])
+full_deck = ((2..10).to_a + ['J', 'Q', 'K', 'A']).product(['d', 'c', 'h', 's'])
 full_deck.each do |arg|
-  hsh_arr << {'number' => arg[0], 'suit' => arg[1] }
+  hsh_arr << { 'number' => arg[0], 'suit' => arg[1] }
 end
 FULL_DECK = hsh_arr
 
 # card e.g. {number => k, suit => s}
 # hand: hash {cards =>  array of cards , status => status_of_hand }
-player_hands = [ {'cards' => [], 'status' => 'live'} ] # will be array of hand hashes
-dealer_hand = {'cards' => [], 'status' => 'live'} # hash containing cards
+player_hands = [{ 'cards' => [], 'status' => 'live' }] # will be array of hand hashes
+dealer_hand = { 'cards' => [], 'status' => 'live' } # hash containing cards
 
 def value(hand)
   total = 0
@@ -31,7 +31,6 @@ def value(hand)
   total
 end
 
-
 def display_hand(hand, pointer)
   card_str = ''
   value_str = ''
@@ -40,7 +39,7 @@ def display_hand(hand, pointer)
   else
     value_str = "#{value(hand)}"
   end
-  hand['cards'].each { |card| card_str << "   #{card['number'].to_s} (#{card['suit']})" }
+  hand['cards'].each { |card| card_str << "   #{card['number']} (#{card['suit']})" }
   puts "#{pointer} | value: #{value_str} |" + card_str
 end
 
@@ -60,10 +59,10 @@ def display_game_state(dealer_hand, player_hands, which_hand_index, whose_turn)
   if whose_turn == 'dealer'
     display_hand(dealer_hand, '       ')
   else
-    puts "        | value:  ? |   #{shown_card['number'].to_s} (#{shown_card['suit']})   < other card face down >"
+    puts "        | value:  ? |   #{shown_card['number']} (#{shown_card['suit']})   < other card face down >"
   end
   puts '____________________________________________________________________'
-  
+
   if player_hands.length == 1
     puts 'Your Hand:'
   else
@@ -152,8 +151,8 @@ def valid_choice(hand, player_hands)
     if invalid_choices == 3
       sleep 1
       choice = nil
-      break
     end
+    break if invalid_choices == 3
   end
   choice
 end
@@ -164,7 +163,7 @@ name = ''
 loop do
   system "clear"
   puts 'Welcome to 21 (Twenty One)!'
-  2.times {puts ''}
+  2.times { puts '' }
   puts 'What is your name?'
   response = gets.chomp
   if response.empty?
@@ -184,8 +183,8 @@ loop do
   remaining_deck.replace(FULL_DECK)
   remaining_deck.shuffle!
 
-  player_hands.replace([ {'cards' => [], 'status' => 'live'} ])
-  dealer_hand.replace({'cards' => [], 'status' => 'live'})
+  player_hands.replace([{ 'cards' => [], 'status' => 'live' }])
+  dealer_hand.replace('cards' => [], 'status' => 'live')
 
   system "clear"
   puts "Ok #{name}! Let's begin"
@@ -225,12 +224,12 @@ loop do
       end
 
       until hand['status'] != 'live'
-        
+
         system "clear"
         puts 'Your turn'
         puts ''
         display_game_state(dealer_hand, player_hands, i, 'player')
-        
+
         player_choice = valid_choice(hand, player_hands)
 
         # hit
@@ -238,7 +237,7 @@ loop do
         # stay
         update_status(hand, 'stayed') if player_choice == '2'
         # split -  modifies object being iterated over! This is intentional **********
-        player_hands << {'cards' => [hand['cards'].pop], 'status' => 'live'} if player_choice == '3'
+        player_hands << { 'cards' => [hand['cards'].pop], 'status' => 'live' } if player_choice == '3'
 
         # check for 21 or bust and update appropriately
         if value(hand) == 21
@@ -299,7 +298,7 @@ loop do
     display_end_state(player_hands, dealer_hand)
   end
   # Play again?
-  3.times {puts ''}
+  3.times { puts '' }
   puts 'Would you like to play again?  y) yes   press any other key to exit'
   response = gets.chomp
 
@@ -307,9 +306,4 @@ loop do
 end
 
 puts "Bye #{name}! Thank you for playing!"
-3.times {puts ''}
-
-
-
-
-
+3.times { puts '' }
