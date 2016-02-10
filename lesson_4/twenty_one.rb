@@ -51,6 +51,10 @@ def update_status(hand, new_status)
   hand['status'].replace(new_status)
 end
 
+def all_same_status?(players, status)
+  players == players.select{ |player| player['player_hands'] == player['player_hands'].select { |hand| hand['status'] == status } }
+end
+
 def display_game_state(dealer_hand, player, which_hand_index, whose_turn)
   cursor = '       '
   shown_card = dealer_hand['cards'][0]
@@ -88,32 +92,34 @@ def display_game_state(dealer_hand, player, which_hand_index, whose_turn)
   puts ''
 end
 
-def display_end_state(player_hands, dealer_hand)
+def display_end_state(players, dealer_hand)
   outcome = '       '
 
-  player_hands.each do |hand|
-    if hand['status'] == 'bust'
-      update_status(hand, '   loss')
-    elsif value(hand) > value(dealer_hand)
-      update_status(hand, '   win!')
-    elsif value(hand) == value(dealer_hand)
-      update_status(hand, '   tie ')
-    elsif value(hand) < value(dealer_hand) && value(dealer_hand) <= 21
-      update_status(hand, '   loss')
-    else # player hasn't busted but dealer has
-      update_status(hand, '   win!')
+  players.each do |player|
+    player['player_hands'].each do |hand|
+      if hand['status'] == 'bust'
+        update_status(hand, '   loss')
+      elsif value(hand) > value(dealer_hand)
+        update_status(hand, '   win!')
+      elsif value(hand) == value(dealer_hand)
+        update_status(hand, '   tie ')
+      elsif value(hand) < value(dealer_hand) && value(dealer_hand) <= 21
+        update_status(hand, '   loss')
+      else # player hasn't busted but dealer has
+        update_status(hand, '   win!')
+      end
     end
   end
 
-  if player_hands == player_hands.select { |hand| hand['status'] == '   loss' }
+  if all_same_status?(players, '   loss')
     if value(dealer_hand) > 21
       outcome = '   bust'
     else
       outcome = '   win!'
     end
-  elsif player_hands == player_hands.select { |hand| hand['status'] == '   tie ' }
+  elsif all_same_status?(players, '   tie ')
     outcome = '   tie '
-  elsif player_hands == player_hands.select { |hand| hand['status'] == '   win!' }
+  elsif all_same_status?(players, '   win!')
     outcome = '   loss'
   else
     outcome = '   -   '
@@ -123,12 +129,15 @@ def display_end_state(player_hands, dealer_hand)
   puts 'Dealer\'s Hand:'
   display_hand(dealer_hand, outcome)
   puts '____________________________________________________________________'
-  if player_hands.length == 1
-    puts 'Your Hand:'
-  else
-    puts 'Your Hands:'
+  players.each do |player|
+    puts '____________________________________________________________________'
+    if player['player_hands'].length == 1
+      puts "#{player['player_name']}'s Hand:"
+    else
+      puts "#{player['player_name']}'s Hands:"
+    end
+    player['player_hands'].each { |hand| display_hand(hand, hand['status']) }
   end
-  player_hands.each { |hand| display_hand(hand, hand['status']) }
 end
 
 # Player turn validation
@@ -231,14 +240,14 @@ loop do
   if value(dealer_hand) == 21
     puts 'Dealer got 21. Better luck next time!'
     puts ''
-    display_end_state(player_hands, dealer_hand)
+    display_end_state(players, dealer_hand)
 
   elsif !players.select{ |player| value(player['player_hands'][0]) == 21 }.empty?
     players.select{ |player| value(player['player_hands'][0]) == 21 }.each do |player|
       puts "#{player['player_name']} got 21! Congratulations!"
     end
     puts ''
-    display_end_state(player_hands, dealer_hand)
+    display_end_state(players, dealer_hand)
   else
     # display gamestate
     # (for each player)
@@ -268,7 +277,7 @@ loop do
           # stay
           update_status(hand, 'stayed') if player_choice == '2'
           # split -  modifies object being iterated over! This is intentional **********
-          player_hands << { 'cards' => [hand['cards'].pop], 'status' => 'live' } if player_choice == '3'
+          player['player_hands'] << { 'cards' => [hand['cards'].pop], 'status' => 'live' } if player_choice == '3'
 
           # check for 21 or bust and update appropriately
           if value(hand) == 21
@@ -278,6 +287,11 @@ loop do
           end
         end
       end
+      system "clear"
+      puts "#{player['player_name']}'s turn:"
+      puts ''
+      display_game_state(dealer_hand, player, 0, 'player')
+      sleep 1.5
     end
 
     # Dealer's turn
@@ -293,7 +307,7 @@ loop do
     puts ''
     display_game_state(dealer_hand, players.last, 0, 'dealer')
 
-    until dealer_hand['status'] != 'live' || players == players.select{ |player| player['player_hands'] == player['player_hands'].select { |hand| hand['status'] == 'bust' } }
+    until dealer_hand['status'] != 'live' || all_same_status?(players, 'bust')
       sleep 1.5
       system "clear"
 
@@ -327,7 +341,7 @@ loop do
     # Report results
     puts 'Results of game:'
     puts ''
-    display_end_state(player_hands, dealer_hand)
+    display_end_state(players, dealer_hand)
   end
   # Play again?
   3.times { puts '' }
@@ -337,5 +351,11 @@ loop do
   break unless response.downcase == 'y'
 end
 
-puts "Bye! Thank you for playing!"
+system "clear"
+3.times { puts '' }
+if players.length > 1
+  puts "Bye everyone! Thank you for playing!"
+else
+  puts "Bye #{players[0]['player_name']}! Thank you for playing!"
+end
 3.times { puts '' }
