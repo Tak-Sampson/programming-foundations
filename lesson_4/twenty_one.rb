@@ -51,7 +51,7 @@ def update_status(hand, new_status)
   hand['status'].replace(new_status)
 end
 
-def display_game_state(dealer_hand, player_hands, which_hand_index, whose_turn)
+def display_game_state(dealer_hand, player, which_hand_index, whose_turn)
   cursor = '       '
   shown_card = dealer_hand['cards'][0]
   puts '____________________________________________________________________'
@@ -63,12 +63,12 @@ def display_game_state(dealer_hand, player_hands, which_hand_index, whose_turn)
   end
   puts '____________________________________________________________________'
 
-  if player_hands.length == 1
-    puts 'Your Hand:'
+  if player['player_hands'].length == 1
+    puts "#{player['player_name']}'s Hand:"
   else
-    puts 'Your Hands:'
+    puts "#{player['player_name']}'s Hands:"
   end
-  player_hands.select.each_with_index do |hand, i|
+  player['player_hands'].select.each_with_index do |hand, i|
     case hand['status']
     when 'stayed'
       cursor = ' stayed'
@@ -158,20 +158,44 @@ def valid_choice(hand, player_hands)
 end
 
 # Main Game Loop
+players = [] # { player_name => 'name', player_hands => array_of_hand_hashes }
+unnamed_players = 0
 
-name = ''
 loop do
   system "clear"
   puts 'Welcome to 21 (Twenty One)!'
   2.times { puts '' }
-  puts 'What is your name?'
+  puts 'How many players? 1, 2, 3, or 4'
   response = gets.chomp
-  if response.empty?
-    puts 'Please enter a valid name'
+  unless ['1', '2', '3', '4'].include?(response)
+    puts 'Please enter a valid number'
     sleep 1
   else
-    name = response
+    unnamed_players = response.to_i
     break
+  end
+end
+
+player_num = 1
+until unnamed_players == 0
+  loop do
+    system "clear"
+    puts 'Welcome to 21 (Twenty One)!'
+    2.times { puts '' }
+    puts "Player #{player_num}: What is your name?"
+    response = gets.chomp
+    if response.empty?
+      puts 'Please enter a valid name'
+      sleep 1
+    elsif players.include?({ 'player_name' => response, 'player_hands' => [{ 'cards' => [], 'status' => 'live' }] })
+      puts 'Name has already been taken; please choose another'
+      sleep 1
+    else
+      players << { 'player_name' => response, 'player_hands' => [{ 'cards' => [], 'status' => 'live' }] }
+      unnamed_players -= 1
+      player_num += 1
+      break
+    end
   end
 end
 
@@ -183,11 +207,15 @@ loop do
   remaining_deck.replace(FULL_DECK)
   remaining_deck.shuffle!
 
-  player_hands.replace([{ 'cards' => [], 'status' => 'live' }])
+  players.each { |player|  player['player_hands'].replace([{ 'cards' => [], 'status' => 'live' }]) }
   dealer_hand.replace('cards' => [], 'status' => 'live')
 
   system "clear"
-  puts "Ok #{name}! Let's begin"
+  if players.length > 1
+    puts "Ok players! Let's begin"
+  else
+    puts "Ok #{players[0]['player_name']}! Let's begin"
+  end
   puts ''
   puts "Dealing cards..."
   sleep 1.5
@@ -195,7 +223,7 @@ loop do
 
   # start by dealing 2 cards to each.
   2.times do
-    deal(player_hands[0], remaining_deck)
+    players.each { |player| deal(player['player_hands'][0], remaining_deck) }
     deal(dealer_hand, remaining_deck)
   end
   # check if dealer won
@@ -205,8 +233,10 @@ loop do
     puts ''
     display_end_state(player_hands, dealer_hand)
 
-  elsif value(player_hands[0]) == 21
-    puts 'You got 21! Congratulations!'
+  elsif !players.select{ |player| value(player['player_hands'][0]) == 21 }.empty?
+    players.select{ |player| value(player['player_hands'][0]) == 21 }.each do |player|
+      puts "#{player['player_name']} got 21! Congratulations!"
+    end
     puts ''
     display_end_state(player_hands, dealer_hand)
   else
@@ -216,34 +246,36 @@ loop do
     #   display
     #   give valid options until hand not live
     # do until no live hands
-    player_hands.each_with_index do |hand, i|
-      if value(hand) == 21
-        update_status(hand, '21')
-      elsif value(hand) > 21
-        update_status(hand, 'bust')
-      end
-
-      until hand['status'] != 'live'
-
-        system "clear"
-        puts 'Your turn'
-        puts ''
-        display_game_state(dealer_hand, player_hands, i, 'player')
-
-        player_choice = valid_choice(hand, player_hands)
-
-        # hit
-        deal(hand, remaining_deck) if player_choice == '1'
-        # stay
-        update_status(hand, 'stayed') if player_choice == '2'
-        # split -  modifies object being iterated over! This is intentional **********
-        player_hands << { 'cards' => [hand['cards'].pop], 'status' => 'live' } if player_choice == '3'
-
-        # check for 21 or bust and update appropriately
+    players.each do |player|
+      player['player_hands'].each_with_index do |hand, i|
         if value(hand) == 21
           update_status(hand, '21')
         elsif value(hand) > 21
           update_status(hand, 'bust')
+        end
+
+        until hand['status'] != 'live'
+
+          system "clear"
+          puts "#{player['player_name']}'s turn:"
+          puts ''
+          display_game_state(dealer_hand, player, i, 'player')
+
+          player_choice = valid_choice(hand, player_hands)
+
+          # hit
+          deal(hand, remaining_deck) if player_choice == '1'
+          # stay
+          update_status(hand, 'stayed') if player_choice == '2'
+          # split -  modifies object being iterated over! This is intentional **********
+          player_hands << { 'cards' => [hand['cards'].pop], 'status' => 'live' } if player_choice == '3'
+
+          # check for 21 or bust and update appropriately
+          if value(hand) == 21
+            update_status(hand, '21')
+          elsif value(hand) > 21
+            update_status(hand, 'bust')
+          end
         end
       end
     end
@@ -253,15 +285,15 @@ loop do
     system "clear"
     puts 'Revealing Dealer\'s cards...'
     puts ''
-    display_game_state(dealer_hand, player_hands, 0, 'player')
+    display_game_state(dealer_hand, players.last, 0, 'player')
     sleep 2.5
 
     system "clear"
     puts 'Dealer\'s turn:'
     puts ''
-    display_game_state(dealer_hand, player_hands, 0, 'dealer')
+    display_game_state(dealer_hand, players.last, 0, 'dealer')
 
-    until dealer_hand['status'] != 'live' || player_hands == player_hands.select { |hand| hand['status'] == 'bust' }
+    until dealer_hand['status'] != 'live' || players == players.select{ |player| player['player_hands'] == player['player_hands'].select { |hand| hand['status'] == 'bust' } }
       sleep 1.5
       system "clear"
 
@@ -269,22 +301,22 @@ loop do
       when 0..16
         puts 'Dealer hits!'
         puts ''
-        display_game_state(dealer_hand, player_hands, 0, 'dealer')
+        display_game_state(dealer_hand, players.last, 0, 'dealer')
         deal(dealer_hand, remaining_deck)
       when 17..20
         puts 'Dealer stays'
         puts ''
-        display_game_state(dealer_hand, player_hands, 0, 'dealer')
+        display_game_state(dealer_hand, players.last, 0, 'dealer')
         update_status(dealer_hand, 'stayed')
       when 21
         puts 'Dealer gets 21!'
         puts ''
-        display_game_state(dealer_hand, player_hands, 0, 'dealer')
+        display_game_state(dealer_hand, players.last, 0, 'dealer')
         update_status(dealer_hand, '21')
       else
         puts 'Dealer busts!'
         puts ''
-        display_game_state(dealer_hand, player_hands, 0, 'dealer')
+        display_game_state(dealer_hand, players.last, 0, 'dealer')
         update_status(dealer_hand, 'bust')
       end
     end
@@ -305,5 +337,5 @@ loop do
   break unless response.downcase == 'y'
 end
 
-puts "Bye #{name}! Thank you for playing!"
+puts "Bye! Thank you for playing!"
 3.times { puts '' }
