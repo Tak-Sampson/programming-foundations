@@ -52,7 +52,7 @@ def update_status(hand, new_status)
 end
 
 def all_same_status?(players, status)
-  players == players.select{ |player| player['player_hands'] == player['player_hands'].select { |hand| hand['status'] == status } }
+  players == players.select { |player| player['player_hands'] == player['player_hands'].select { |hand| hand['status'] == status } }
 end
 
 def display_game_state(dealer_hand, player, which_hand_index, whose_turn)
@@ -176,7 +176,7 @@ loop do
   2.times { puts '' }
   puts 'How many players? 1, 2, 3, or 4'
   response = gets.chomp
-  unless ['1', '2', '3', '4'].include?(response)
+  if !['1', '2', '3', '4'].include?(response)
     puts 'Please enter a valid number'
     sleep 1
   else
@@ -196,7 +196,7 @@ until unnamed_players == 0
     if response.empty?
       puts 'Please enter a valid name'
       sleep 1
-    elsif players.include?({ 'player_name' => response, 'player_hands' => [{ 'cards' => [], 'status' => 'live' }] })
+    elsif players.include?('player_name' => response, 'player_hands' => [{ 'cards' => [], 'status' => 'live' }])
       puts 'Name has already been taken; please choose another'
       sleep 1
     else
@@ -216,7 +216,7 @@ loop do
   remaining_deck.replace(FULL_DECK)
   remaining_deck.shuffle!
 
-  players.each { |player|  player['player_hands'].replace([{ 'cards' => [], 'status' => 'live' }]) }
+  players.each { |player| player['player_hands'].replace([{ 'cards' => [], 'status' => 'live' }]) }
   dealer_hand.replace('cards' => [], 'status' => 'live')
 
   system "clear"
@@ -242,8 +242,8 @@ loop do
     puts ''
     display_end_state(players, dealer_hand)
 
-  elsif !players.select{ |player| value(player['player_hands'][0]) == 21 }.empty?
-    players.select{ |player| value(player['player_hands'][0]) == 21 }.each do |player|
+  elsif !players.select { |player| value(player['player_hands'][0]) == 21 }.empty?
+    players.select { |player| value(player['player_hands'][0]) == 21 }.each do |player|
       puts "#{player['player_name']} got 21! Congratulations!"
     end
     puts ''
